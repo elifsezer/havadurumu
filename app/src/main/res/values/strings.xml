@@ -2,7 +2,6 @@
     <string name="app_name">HavaDurumuApp</string>
     <string-array name="sehirler">
         <item>Şuanki Şehir</item>
-        <item>Şehir Seçin</item>
         <item>Ankara</item>
         <item>Bursa</item>
         <item>İstanbul</item>

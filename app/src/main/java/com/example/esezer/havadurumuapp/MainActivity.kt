@@ -1,7 +1,11 @@
 package com.example.esezer.havadurumuapp
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.view.View
 import android.widget.*
@@ -33,25 +37,13 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spnSehirler.adapter = spinnerAdapter
         spnSehirler.onItemSelectedListener = this
-
-        location = SimpleLocation(this)
-        if (!location!!.hasLocationEnabled()) {
-            //burada kullanıcıdan izin istenecek.
-            SimpleLocation.openSettings(this)
-        }
-        location?.setListener(object : SimpleLocation.Listener {
-            override fun onPositionChanged() {
-                latitude = String.format("%.2f", location?.latitude)
-                longitude = String.format("%.2f", location?.longitude)
-                Log.e("elifffff", "  " + latitude + " " + longitude)
-            }
-
-        })
+        spnSehirler.setSelection(1)
+        verileriGetir("Ankara")
 
 
     }
 
-    private fun oankiSehriGetir(lat: String?, longt: String?): String {
+    private fun oankiSehriGetir(lat: String?, longt: String?) {
         var url =
             "https://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + longt + "&appid=f5a0343d74202c2d178fda5191bb250e&lang=tr&units=metric"
         var sehirAdi: String? = null
@@ -97,22 +89,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             }
         })
 
-
         MySingleton.getInstance(this)?.addToRequestQueue(havaDurumuObje2)
-        if (sehirAdi != null) {
-            return sehirAdi!!
-        } else return "N / A"
+
     }
 
-    override fun onResume() {
-        super.onResume()
-        location?.beginUpdates()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        location?.endUpdates()
-    }
 
     //adaptor boş odlguunda tetiklenir.
     override fun onNothingSelected(p0: AdapterView<*>?) {
@@ -122,13 +102,62 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
         tvSehir = view as TextView
         if (position == 0) {
-            var oankiSehirAdi = oankiSehriGetir(latitude, longitude)
-            tvSehir?.setText(oankiSehirAdi)
-        } else {
+           location= SimpleLocation(this)
+
+            if (!location!!.hasLocationEnabled())
+            {
+                spnSehirler.setSelection(1)
+                Toast.makeText(this,"GPSnizi açmalısınız",Toast.LENGTH_LONG).show()
+                SimpleLocation.openSettings(this)
+            }else
+            {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                {
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),60)
+                }else
+                {
+                    location = SimpleLocation(this)
+                    latitude = String.format("%.6f", location?.latitude)
+                    longitude = String.format("%.6f", location?.longitude)
+                    Log.e("LAT", "" + latitude)
+                    Log.e("LONG", "" + longitude)
+
+                    oankiSehriGetir(latitude, longitude)
+                }
+            }
+        }
+        else
+        {
             var secilenSehir = parent?.getItemAtPosition(position).toString()
+            tvSehir = view as TextView
             verileriGetir(secilenSehir)
         }
 
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+
+        if(requestCode == 60){
+
+            if(grantResults.size > 0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                location = SimpleLocation(this)
+                latitude = String.format("%.6f", location?.latitude)
+                longitude = String.format("%.6f", location?.longitude)
+                Log.e("LAT", "" + latitude)
+                Log.e("LONG", "" + longitude)
+
+                oankiSehriGetir(latitude, longitude)
+
+            }else {
+                spnSehirler.setSelection(1)
+                Toast.makeText(this, "İzin vereydin de konumunu bulaydık :P", Toast.LENGTH_LONG).show()
+
+            }
+
+
+        }
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     fun verileriGetir(sehir: String) {
